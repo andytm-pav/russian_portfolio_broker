@@ -1,0 +1,20 @@
+{
+  "force_trading_mode": true,
+
+  "web_port": 5000,
+  "rebalance_interval_minutes": 1,
+  "sentiment_interval_minutes": 1,
+  "retrain_interval_minutes": 10,
+  "pre_session_analysis_minutes": 30,
+
+  "trading_session": {
+    "start": "09:30",
+    "end": "18:40"
+  },
+
+  "model_path": "models/saved_trader",
+  "min_news_age_seconds": 60,
+  "target_positions": 8,
+  "max_position_weight": 0.15,
+  "min_cash_per_trade": 8000
+}

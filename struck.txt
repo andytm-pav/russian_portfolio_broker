@@ -1,0 +1,56 @@
+russian_portfolio_broker/
+│
+├── main.py
+├── config/
+│   └── settings.json
+├── data/
+│   ├── portfolio.json
+│   ├── labeled_news.json
+│   ├── news_cache.json
+│   └── moex_securities.json
+├── web/
+│   ├── app.py
+│   └── templates/
+│       └── index.html
+├── models/
+│   ├── smart_broker.py
+│   └── trainer.py
+├── fetchers/
+│   ├── moex_fetcher.py
+│   └── news_fetcher.py
+├── analyzers/
+│   └── sentiment_analyzer.py
+├── utils/
+│   ├── logger.py
+│   └── portfolio_manager.py
+└── requirements.txt
+
+
+russian_portfolio_broker/
+│
+├── main.py
+├── config/
+│   ├── settings.json
+│   ├── news_sources.json
+│   └── broker.json
+├── data/
+│   ├── portfolio.json
+│   ├── labeled_news.json
+│   ├── news_cache.json
+│   └── moex_securities.json
+├── web/
+│   ├── app.py
+│   └── templates/
+│       └── index.html
+├── models/
+│   ├── smart_broker.py
+│   ├── trader_model.py
+│   └── trainer.py
+├── fetchers/
+│   ├── moex_fetcher.py
+│   └── news_fetcher.py
+├── analyzers/
+│   └── sentiment_analyzer.py
+├── utils/
+│   ├── logger.py
+│   └── portfolio_manager.py

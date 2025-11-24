@@ -1,0 +1,40 @@
+{
+  "cash": 7100.38,
+  "positions": {
+    "LSNG": {
+      "qty": 73,
+      "avg_price": 14.9
+    },
+    "KLSB": {
+      "qty": 52,
+      "avg_price": 18.63
+    },
+    "MFGS": {
+      "qty": 2,
+      "avg_price": 421.0
+    }
+  },
+  "trades": [
+    {
+      "type": "BUY",
+      "ticker": "LSNG",
+      "qty": 73,
+      "price": 14.9,
+      "total": 1088.14
+    },
+    {
+      "type": "BUY",
+      "ticker": "KLSB",
+      "qty": 52,
+      "price": 18.63,
+      "total": 969.15
+    },
+    {
+      "type": "BUY",
+      "ticker": "MFGS",
+      "qty": 2,
+      "price": 421.0,
+      "total": 842.34
+    }
+  ]
+}

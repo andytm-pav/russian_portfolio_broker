@@ -1,0 +1,185 @@
+{
+  "timestamp": 1763544547.297838,
+  "securities": {
+    "SBER": {
+      "volume": 150000000,
+      "prev_price": 250.0,
+      "current_price": 255.5,
+      "name": "Сбербанк"
+    },
+    "SBERP": {
+      "volume": 50000000,
+      "prev_price": 240.0,
+      "current_price": 245.8,
+      "name": "Сбербанк-п"
+    },
+    "GAZP": {
+      "volume": 200000000,
+      "prev_price": 150.0,
+      "current_price": 152.3,
+      "name": "Газпром"
+    },
+    "LKOH": {
+      "volume": 80000000,
+      "prev_price": 6000.0,
+      "current_price": 6100.75,
+      "name": "Лукойл"
+    },
+    "ROSN": {
+      "volume": 120000000,
+      "prev_price": 500.0,
+      "current_price": 512.4,
+      "name": "Роснефть"
+    },
+    "VTBR": {
+      "volume": 300000000,
+      "prev_price": 0.02,
+      "current_price": 0.0215,
+      "name": "ВТБ"
+    },
+    "ALRS": {
+      "volume": 60000000,
+      "prev_price": 145.0,
+      "current_price": 148.9,
+      "name": "АЛРОСА"
+    },
+    "POLY": {
+      "volume": 40000000,
+      "prev_price": 800.0,
+      "current_price": 810.25,
+      "name": "Polymetal"
+    },
+    "YNDX": {
+      "volume": 70000000,
+      "prev_price": 2450.0,
+      "current_price": 2480.6,
+      "name": "Yandex"
+    },
+    "MGNT": {
+      "volume": 30000000,
+      "prev_price": 3950.0,
+      "current_price": 3980.45,
+      "name": "Магнит"
+    },
+    "TCSG": {
+      "volume": 25000000,
+      "prev_price": 2480.0,
+      "current_price": 2510.8,
+      "name": "TCS Group"
+    },
+    "MOEX": {
+      "volume": 40000000,
+      "prev_price": 148.0,
+      "current_price": 150.5,
+      "name": "Московская Биржа"
+    },
+    "NLMK": {
+      "volume": 50000000,
+      "prev_price": 118.0,
+      "current_price": 120.4,
+      "name": "НЛМК"
+    },
+    "GMKN": {
+      "volume": 30000000,
+      "prev_price": 22000.0,
+      "current_price": 22350.0,
+      "name": "ГМК Норникель"
+    },
+    "PLZL": {
+      "volume": 35000000,
+      "prev_price": 12000.0,
+      "current_price": 12180.0,
+      "name": "Полюс"
+    },
+    "TATN": {
+      "volume": 80000000,
+      "prev_price": 320.0,
+      "current_price": 325.6,
+      "name": "Татнефть"
+    },
+    "TATNP": {
+      "volume": 20000000,
+      "prev_price": 310.0,
+      "current_price": 315.2,
+      "name": "Татнефть-п"
+    },
+    "AFKS": {
+      "volume": 25000000,
+      "prev_price": 55.0,
+      "current_price": 56.3,
+      "name": "Система"
+    },
+    "AFLT": {
+      "volume": 35000000,
+      "prev_price": 45.0,
+      "current_price": 46.1,
+      "name": "Аэрофлот"
+    },
+    "PIKK": {
+      "volume": 15000000,
+      "prev_price": 650.0,
+      "current_price": 665.0,
+      "name": "ПИК"
+    },
+    "OKEY": {
+      "volume": 20000000,
+      "prev_price": 1200.0,
+      "current_price": 1220.5,
+      "name": "O'KEY"
+    },
+    "DSKY": {
+      "volume": 10000000,
+      "prev_price": 480.0,
+      "current_price": 490.25,
+      "name": "Детский мир"
+    },
+    "MTSS": {
+      "volume": 40000000,
+      "prev_price": 250.0,
+      "current_price": 255.8,
+      "name": "МТС"
+    },
+    "HYDR": {
+      "volume": 60000000,
+      "prev_price": 0.8,
+      "current_price": 0.82,
+      "name": "РусГидро"
+    },
+    "FEES": {
+      "volume": 45000000,
+      "prev_price": 18.0,
+      "current_price": 18.5,
+      "name": "ФСК ЕЭС"
+    },
+    "RTKM": {
+      "volume": 30000000,
+      "prev_price": 6.5,
+      "current_price": 6.65,
+      "name": "Ростелеком"
+    },
+    "RUAL": {
+      "volume": 50000000,
+      "prev_price": 40.0,
+      "current_price": 41.2,
+      "name": "РУСАЛ"
+    },
+    "MAGN": {
+      "volume": 35000000,
+      "prev_price": 50.0,
+      "current_price": 51.5,
+      "name": "ММК"
+    },
+    "CHMF": {
+      "volume": 40000000,
+      "prev_price": 1200.0,
+      "current_price": 1220.0,
+      "name": "Северсталь"
+    },
+    "SNGS": {
+      "volume": 30000000,
+      "prev_price": 35.0,
+      "current_price": 36.1,
+      "name": "Сургутнефтегаз"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Хедж-Фонд: Умный Брокер</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {font-family: Consolas; background:#1e1e1e; color:#ccc; margin:0; display:flex; height:100vh;}
+        .frame {flex:1; padding:15px; overflow:auto; border-right:1px solid #333;}
+        .frame:last-child {border:none;}
+        h3 {margin-top:0; color:#0af;}
+        table {width:100%; border-collapse:collapse;}
+        th, td {padding:5px; text-align:left; border-bottom:1px solid #444;}
+        .INFO {color:#0f0;}
+        .BUY {color:#00f; font-weight:bold;}
+        .SELL {color:#f00; font-weight:bold;}
+        .SENTIMENT {color:#ff0;}
+    </style>
+</head>
+<body>
+<div class="frame" id="status">
+    <h3>Статус</h3>
+    <p>Сессия: <span id="session">—</span></p>
+    <p>До старта: <span id="countdown">—</span></p>
+    <p>Шаг: <span id="step">—</span></p>
+</div>
+
+<div class="frame" id="portfolio">
+    <h3>Портфель</h3>
+    <p>Кэш: <span id="cash">—</span> ₽</p>
+    <table id="positions">
+        <tr><th>Тикер</th><th>Кол-во</th><th>Средняя</th><th>Текущая</th><th>±%</th></tr>
+    </table>
+</div>
+
+<div class="frame" id="debug">
+    <h3>Отладка</h3>
+    <div id="log"></div>
+</div>
+
+<script>
+    const socket = io();
+    const log = document.getElementById('log');
+    const addLog = (d) => {
+        const p = document.createElement('div');
+        p.className = d.level;
+        p.textContent = `[${new Date().toLocaleTimeString()}] ${d.msg}` + (d.data ? ` | ${d.data}` : '');
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+    };
+    socket.on('log', addLog);
+
+    const updateStatus = () => {
+        fetch('/api/status').then(r => r.json()).then(data => {
+            document.getElementById('session').textContent = data.session;
+            document.getElementById('countdown').textContent = data.countdown;
+            document.getElementById('step').textContent = data.step;
+            document.getElementById('cash').textContent = data.cash.toLocaleString();
+
+            const tbody = document.getElementById('positions');
+            tbody.innerHTML = '<tr><th>Тикер</th><th>Кол-во</th><th>Средняя</th><th>Текущая</th><th>±%</th></tr>';
+            Object.entries(data.portfolio.positions).forEach(([t, p]) => {
+                const row = document.createElement('tr');
+                const change = ((p.current - p.avg_price) / p.avg_price * 100).toFixed(2);
+                const color = change > 0 ? '#0f0' : '#f00';
+                row.innerHTML = `<td>${t}</td><td>${p.qty}</td><td>${p.avg_price.toFixed(2)}</td><td>${p.current.toFixed(2)}</td><td style="color:${color}">${change}%</td>`;
+                tbody.appendChild(row);
+            });
+        });
+    };
+    setInterval(updateStatus, 2000);
+    updateStatus();
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+{
+  "cash": 20858.95,
+  "positions": {
+    "GAZP": {
+      "qty": 6,
+      "avg_price": 117.3
+    },
+    "MTSS": {
+      "qty": 5,
+      "avg_price": 202.65
+    },
+    "ROSN": {
+      "qty": 3,
+      "avg_price": 411.25
+    },
+    "MRKV": {
+      "qty": 24500,
+      "avg_price": 0.1278
+    },
+    "SBER": {
+      "qty": 8,
+      "avg_price": 255.5
+    },
+    "SBERP": {
+      "qty": 9,
+      "avg_price": 245.8
+    }
+  },
+  "trades": [
+    {
+      "type": "SELL",
+      "ticker": "GAZP",
+      "qty": 11,
+      "price": 152.3,
+      "comm": 1
+    },
+    {
+      "type": "SELL",
+      "ticker": "MTSS",
+      "qty": 10,
+      "price": 255.8,
+      "comm": 1
+    },
+    {
+      "type": "SELL",
+      "ticker": "ROSN",
+      "qty": 5,
+      "price": 512.4,
+      "comm": 1
+    },
+    {
+      "type": "SELL",
+      "ticker": "SBER",
+      "qty": 20,
+      "price": 255.5,
+      "comm": 2
+    },
+    {
+      "type": "BUY",
+      "ticker": "SBER",
+      "qty": 8,
+      "price": 255.5,
+      "comm": 1
+    },
+    {
+      "type": "SELL",
+      "ticker": "GAZP",
+      "qty": 6,
+      "price": 152.3,
+      "comm": 0
+    },
+    {
+      "type": "SELL",
+      "ticker": "MTSS",
+      "qty": 5,
+      "price": 255.8,
+      "comm": 0
+    },
+    {
+      "type": "SELL",
+      "ticker": "ROSN",
+      "qty": 2,
+      "price": 512.4,
+      "comm": 0
+    },
+    {
+      "type": "BUY",
+      "ticker": "SBERP",
+      "qty": 9,
+      "price": 245.8,
+      "comm": 1
+    }
+  ]
+}
