@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 class NewsEncoder(nn.Module):
     """Нейросеть для анализа новостей и извлечения скрытых признаков"""
 
-    def __init__(self, input_dim=768, hidden_dim=256):
+    def __init__(self, input_dim=312, hidden_dim=256):  # Изменено с 768 на 312
         super().__init__()
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 512),
@@ -40,7 +40,7 @@ class NewsEncoder(nn.Module):
 class TradingPolicyNetwork(nn.Module):
     """Политика трейдера: принимает решение на основе состояния рынка"""
 
-    def __init__(self, state_dim=150, action_dim=3):
+    def __init__(self, state_dim=140, action_dim=3):  # Изменено с 150 на 140
         super().__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -89,9 +89,29 @@ class AdvancedTraderModel:
         self.model_dir = model_dir
         os.makedirs(model_dir, exist_ok=True)
 
+        # Для вычисления градиентов
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         # Основные сети
         self.news_encoder = NewsEncoder()
+        self.news_encoder.to(self.device)
+
         self.policy_net = TradingPolicyNetwork()
+        self.policy_net.to(self.device)
+
+        # Модель для анализа новостей (RuBERT)
+        try:
+            from transformers import AutoTokenizer, AutoModel
+            self.news_tokenizer = AutoTokenizer.from_pretrained("cointegrated/rubert-tiny2")
+            self.bert_model = AutoModel.from_pretrained("cointegrated/rubert-tiny2")
+            self.bert_model.to(self.device)
+            self.bert_model.eval()
+            print("[TraderModel] ✓ Загружена модель RuBERT для анализа новостей")
+        except Exception as e:
+            print(f"[TraderModel] ⚠ Не удалось загрузить RuBERT: {e}")
+            print("[TraderModel] ⚠ Используется упрощенный анализ новостей")
+            self.bert_model = None
+            self.news_tokenizer = None
 
         # Оптимизаторы
         self.news_optimizer = optim.Adam(self.news_encoder.parameters(), lr=learning_rate)
@@ -124,11 +144,6 @@ class AdvancedTraderModel:
 
         # Загружаем сохранённые веса, если они есть
         self.load_model()
-
-        # Для вычисления градиентов
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.news_encoder.to(self.device)
-        self.policy_net.to(self.device)
 
         print(f"[TraderModel] Инициализирована на {self.device}")
         print(f"[TraderModel] Загружено ошибок: {len(self.error_memory)} тикеров")
@@ -171,9 +186,13 @@ class AdvancedTraderModel:
                 checkpoint = torch.load(weights_path, map_location=self.device)
                 self.news_encoder.load_state_dict(checkpoint['news_encoder'])
                 self.policy_net.load_state_dict(checkpoint['policy_net'])
-                self.news_optimizer.load_state_dict(checkpoint['news_optimizer'])
-                self.policy_optimizer.load_state_dict(checkpoint['policy_optimizer'])
-                print(f"[TraderModel] Загружены веса нейросетей")
+
+                if 'news_optimizer' in checkpoint:
+                    self.news_optimizer.load_state_dict(checkpoint['news_optimizer'])
+                if 'policy_optimizer' in checkpoint:
+                    self.policy_optimizer.load_state_dict(checkpoint['policy_optimizer'])
+
+                print(f"[TraderModel] ✓ Загружены веса нейросетей")
 
         except Exception as e:
             print(f"[TraderModel] Ошибка загрузки весов: {e}")
@@ -196,28 +215,106 @@ class AdvancedTraderModel:
                 self.market_sentiment = state.get('market_sentiment', 0.0)
                 self.sentiment_history = deque(state.get('sentiment_history', []), maxlen=100)
 
-                print(f"[TraderModel] Загружено: {len(self.error_memory)} ошибок, "
+                print(f"[TraderModel] ✓ Загружено: {len(self.error_memory)} ошибок, "
                       f"{len(self.ticker_stats)} тикеров, sentiment={self.market_sentiment:.3f}")
 
         except Exception as e:
             print(f"[TraderModel] Ошибка загрузки состояния: {e}")
 
     def encode_news(self, news_texts: List[str]) -> torch.Tensor:
-        """Кодируем новости в векторное представление"""
+        """Кодируем новости в векторное представление через RuBERT"""
         if not news_texts:
-            # Возвращаем нулевой вектор правильной размерности
             return torch.zeros(1, 128).to(self.device)
 
-        # Здесь должна быть реальная модель эмбеддингов (RuBERT)
-        # Временно используем случайные эмбеддинги правильного размера
-        batch_size = len(news_texts)
-        dummy_embeddings = torch.randn(batch_size, 768).to(self.device)
+        try:
+            if self.bert_model is not None and self.news_tokenizer is not None:
+                # Токенизация
+                inputs = self.news_tokenizer(
+                    news_texts,
+                    padding=True,
+                    truncation=True,
+                    max_length=128,
+                    return_tensors="pt"
+                ).to(self.device)
 
+                # Получение эмбеддингов
+                with torch.no_grad():
+                    outputs = self.bert_model(**inputs)
+
+                    # Проверяем размерность
+                    embedding_dim = outputs.last_hidden_state.shape[2]
+                    print(f"[TraderModel] BERT embedding dimension: {embedding_dim}")
+
+                    # Автоматически определяем размерность
+                    if embedding_dim != self.news_encoder.encoder[0].in_features:
+                        print(
+                            f"[TraderModel] ⚠ Размерность не совпадает: BERT={embedding_dim}, Encoder={self.news_encoder.encoder[0].in_features}")
+                        print(f"[TraderModel] ⚠ Использую упрощенное кодирование")
+                        raise ValueError("Dimension mismatch")
+
+                    # Берем эмбеддинги [CLS] токена
+                    embeddings = outputs.last_hidden_state[:, 0, :]
+
+                # Пропускаем через энкодер
+                self.news_encoder.eval()
+                with torch.no_grad():
+                    news_features = self.news_encoder(embeddings)
+
+                print(f"[TraderModel] encode_news: {len(news_texts)} новостей → {news_features.shape}")
+                return news_features
+
+        except Exception as e:
+            print(f"[TraderModel] Ошибка кодирования через BERT: {e}")
+            print(f"[TraderModel] Использую упрощенное кодирование")
+
+        # Упрощенное кодирование (фолбэк)
+        return self.simple_encode_news(news_texts)
+
+    def simple_encode_news(self, news_texts: List[str]) -> torch.Tensor:
+        """Упрощенное кодирование новостей без BERT"""
+        batch_size = len(news_texts)
+        embeddings = torch.zeros(batch_size, 312).to(self.device)  # Размерность как у BERT
+
+        for i, text in enumerate(news_texts):
+            # Простые эвристики
+            text = text.lower()
+            words = text.split()
+
+            # Признаки
+            length_norm = min(len(text) / 500, 1.0)
+            word_count = min(len(words) / 100, 1.0)
+            unique_ratio = len(set(words)) / max(len(words), 1)
+
+            # Ключевые слова для финансового анализа
+            positive_words = ['рост', 'прибыль', 'увеличение', 'дивиденд', 'выше', 'улучшение']
+            negative_words = ['падение', 'убыток', 'снижение', 'проблемы', 'ниже', 'сокращение']
+            market_words = ['рынок', 'акция', 'фондовый', 'бирж', 'инвест', 'торг']
+
+            # Вычисляем признаки
+            pos_score = sum(1 for word in positive_words if word in text) / len(positive_words)
+            neg_score = sum(1 for word in negative_words if word in text) / len(negative_words)
+            market_score = sum(1 for word in market_words if word in text) / len(market_words)
+
+            # Создаем эмбеддинг
+            embedding = torch.zeros(312).to(self.device)
+            embedding[0] = length_norm
+            embedding[1] = word_count
+            embedding[2] = unique_ratio
+            embedding[3] = pos_score
+            embedding[4] = neg_score
+            embedding[5] = market_score
+            embedding[6] = pos_score - neg_score  # Общий сентимент
+
+            # Добавляем немного шума для разнообразия
+            embedding[7:] = torch.randn(305).to(self.device) * 0.01
+
+            embeddings[i] = embedding
+
+        # Пропускаем через энкодер
         self.news_encoder.eval()
         with torch.no_grad():
-            news_features = self.news_encoder(dummy_embeddings)
+            news_features = self.news_encoder(embeddings)
 
-        print(f"[DEBUG] encode_news: вход={len(news_texts)}, выход={news_features.shape}")
         return news_features
 
     def calculate_risk_score(self, ticker: str, price: float, sentiment: float) -> float:
@@ -248,64 +345,68 @@ class AdvancedTraderModel:
         """Строим вектор состояния для принятия решения"""
 
         # Извлекаем признаки из новостей
-        if news_features.numel() > 0:
+        if news_features.numel() > 0 and news_features.shape[1] == 128:
             news_vec = news_features.mean(dim=0).cpu().numpy()
-            news_features_count = len(news_vec)
         else:
-            news_vec = np.zeros(128)  # Всегда 128 признаков
-            news_features_count = 128
+            news_vec = np.zeros(128)
 
         # Статистика по тикеру
         stats = self.ticker_stats[ticker]
         success_rate = stats['success_rate'] if stats['total_trades'] > 0 else 0.5
+        total_trades = stats['total_trades']
 
         # Оценка риска
         risk_score = self.calculate_risk_score(ticker, price, sentiment)
 
-        # Базовые признаки (8 шт)
+        # Базовые признаки (10 шт)
         features = [
             price / 1000.0,  # Нормализованная цена
-            momentum * 10.0,  # Моментум
+            momentum * 10.0,  # Моментум (усиленный)
             sentiment,  # Сентимент
             risk_score,  # Риск
             success_rate,  # Историческая успешность
+            min(total_trades / 100.0, 1.0),  # Опыт по тикеру
             self.market_sentiment,  # Рыночное настроение
-            market_data.get('volume', 0) / 1e6 if market_data else 0,  # Объём
-            market_data.get('spread', 0.01) * 100 if market_data else 1.0,  # Спред
+            market_data.get('volume', 0) / 1e6 if market_data else 0,  # Объём (млн)
+            market_data.get('spread', 0.01) * 100 if market_data else 1.0,  # Спред (%)
+            market_data.get('liquidity', 0.5) if market_data else 0.5,  # Ликвидность
         ]
 
-        # Новостные признаки (должно быть 128)
-        features.extend(news_vec.tolist())  # ВСЕ 128 признаков, а не первые 20
+        # Новостные признаки (128)
+        features.extend(news_vec.tolist())
 
-        # Дополнительные рыночные признаки (3 шт)
+        # Дополнительные рыночные признаки (2 шт)
         features.extend([
-            market_data.get('rsi', 50) / 100.0 if market_data else 0.5,
-            market_data.get('volatility', 0.1) if market_data else 0.1,
-            market_data.get('trend', 0.0) if market_data else 0.0
+            market_data.get('rsi', 50) / 100.0 if market_data else 0.5,  # RSI нормализованный
+            market_data.get('volatility', 0.1) if market_data else 0.1,  # Волатильность
         ])
 
-        # ИТОГО: 8 + 128 + 3 = 139 признаков
+        # ИТОГО: 10 + 128 + 2 = 140 признаков
 
-        # Добавляем недостающие признаки для достижения 150
-        missing = 150 - len(features)
-        if missing > 0:
-            features.extend([0.0] * missing)
-        elif missing < 0:
-            features = features[:150]  # Обрезаем лишние
+        # Преобразуем в тензор
+        state_vector = torch.FloatTensor(features).to(self.device)
 
-        print(f"[DEBUG build_state_vector] ticker={ticker}, features={len(features)}")
+        # Проверяем размерность
+        if state_vector.shape[0] != 140:
+            print(f"[TraderModel] ⚠ Предупреждение: размерность состояния {state_vector.shape[0]} != 140")
+            # Корректируем размерность
+            if state_vector.shape[0] < 140:
+                padding = torch.zeros(140 - state_vector.shape[0]).to(self.device)
+                state_vector = torch.cat([state_vector, padding])
+            else:
+                state_vector = state_vector[:140]
 
-        return torch.FloatTensor(features).to(self.device)
+        return state_vector
 
     def choose_action(self,
                       state: torch.Tensor,
                       ticker: str,
-                      current_price: float) -> Tuple[int, float]:
+                      current_price: float) -> Tuple[int, float, float]:
         """Выбираем действие на основе политики"""
         self.policy_net.eval()
 
         with torch.no_grad():
-            action_probs, state_value = self.policy_net(state)
+            action_probs, state_value = self.policy_net(state.unsqueeze(0))
 
         # Преобразуем в numpy
         probs = action_probs.cpu().numpy().flatten()
@@ -342,47 +443,57 @@ class AdvancedTraderModel:
     def learn_from_experience(self, batch_size: int = 64):
         """Обучаемся на сохранённом опыте"""
         if len(self.memory) < batch_size:
-            return
+            return None
 
-        # Выбираем случайную выборку
-        indices = np.random.choice(len(self.memory), batch_size, replace=False)
-        batch = [self.memory[i] for i in indices]
+        try:
+            # Выбираем случайную выборку
+            indices = np.random.choice(len(self.memory), batch_size, replace=False)
+            batch = [self.memory[i] for i in indices]
 
-        states = torch.stack([exp['state'] for exp in batch]).to(self.device)
-        actions = torch.LongTensor([exp['action'] for exp in batch]).to(self.device)
-        rewards = torch.FloatTensor([exp['reward'] for exp in batch]).to(self.device)
-        next_states = torch.stack([exp['next_state'] for exp in batch]).to(self.device)
-        dones = torch.FloatTensor([exp['done'] for exp in batch]).to(self.device)
+            states = torch.stack([exp['state'] for exp in batch]).to(self.device)
+            actions = torch.LongTensor([exp['action'] for exp in batch]).to(self.device)
+            rewards = torch.FloatTensor([exp['reward'] for exp in batch]).to(self.device)
+            next_states = torch.stack([exp['next_state'] for exp in batch]).to(self.device)
+            dones = torch.FloatTensor([exp['done'] for exp in batch]).to(self.device)
 
-        # Переключаем в режим обучения
-        self.policy_net.train()
+            # Переключаем в режим обучения
+            self.policy_net.train()
 
-        # Вычисляем лосс
-        _, current_values = self.policy_net(states)
-        _, next_values = self.policy_net(next_states)
+            # Вычисляем лосс
+            _, current_values = self.policy_net(states)
+            _, next_values = self.policy_net(next_states)
 
-        # Целевые значения
-        target_values = rewards + (1 - dones) * self.gamma * next_values
+            # Целевые значения
+            target_values = rewards + (1 - dones) * self.gamma * next_values
 
-        # Лосс для value сети
-        value_loss = nn.MSELoss()(current_values, target_values.detach())
+            # Лосс для value сети
+            value_loss = nn.MSELoss()(current_values, target_values.detach())
 
-        # Лосс для policy сети
-        action_probs, _ = self.policy_net(states)
-        dist = torch.distributions.Categorical(action_probs)
-        log_probs = dist.log_prob(actions)
-        policy_loss = -(log_probs * (target_values - current_values).detach()).mean()
+            # Лосс для policy сети
+            action_probs, _ = self.policy_net(states)
+            dist = torch.distributions.Categorical(action_probs)
+            log_probs = dist.log_prob(actions)
+            policy_loss = -(log_probs * (target_values - current_values).detach()).mean()
 
-        # Общий лосс
-        total_loss = value_loss + policy_loss
+            # Общий лосс
+            total_loss = value_loss + policy_loss
 
-        # Оптимизация
-        self.policy_optimizer.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
-        self.policy_optimizer.step()
+            # Оптимизация
+            self.policy_optimizer.zero_grad()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
+            self.policy_optimizer.step()
 
-        return total_loss.item()
+            # Также обучаем энкодер новостей (если есть данные)
+            if len(self.memory) > 1000 and hasattr(self, 'news_optimizer'):
+                self.news_encoder.train()
+                # Здесь можно добавить обучение энкодера на задаче реконструкции
+
+            return total_loss.item()
+
+        except Exception as e:
+            print(f"[TraderModel] Ошибка обучения: {e}")
+            return None
 
     def update_market_sentiment(self, sentiment_score: float):
         """Обновляем рыночное настроение с экспоненциальным сглаживанием"""
@@ -396,10 +507,16 @@ class AdvancedTraderModel:
                              exit_price: float,
                              hold_time: float,
                              news_sentiment: float,
-                             market_conditions: Dict):
+                             market_conditions: Dict) -> Tuple[float, float]:
         """Запоминаем результат сделки и извлекаем уроки"""
 
-        pnl = (exit_price - entry_price) / entry_price if action == 'BUY' else (entry_price - exit_price) / entry_price
+        # Рассчитываем PnL
+        if action == 'BUY':
+            pnl = (exit_price - entry_price) / entry_price
+        elif action == 'SELL':
+            pnl = (entry_price - exit_price) / entry_price
+        else:
+            pnl = 0.0  # Для HOLD или других действий
 
         # Обновляем статистику
         stats = self.ticker_stats[ticker]
@@ -409,38 +526,56 @@ class AdvancedTraderModel:
         if pnl > 0:
             stats['profitable_trades'] += 1
 
-        stats['avg_hold_time'] = (stats['avg_hold_time'] * (stats['total_trades'] - 1) + hold_time) / stats[
-            'total_trades']
-        stats['success_rate'] = stats['profitable_trades'] / stats['total_trades']
+        # Обновляем среднее время удержания
+        if stats['total_trades'] == 1:
+            stats['avg_hold_time'] = hold_time
+        else:
+            stats['avg_hold_time'] = (stats['avg_hold_time'] * (stats['total_trades'] - 1) + hold_time) / stats[
+                'total_trades']
 
-        # Запоминаем ошибки
-        if pnl < -0.05:  # Существенный убыток
+        stats['success_rate'] = stats['profitable_trades'] / stats['total_trades'] if stats['total_trades'] > 0 else 0.0
+
+        # Запоминаем ошибки (существенные убытки)
+        if pnl < -0.03:  # Убыток более 3%
             error_data = self.error_memory[ticker]
             error_data['failed_trades'].append({
                 'date': datetime.now().isoformat(),
                 'pnl': pnl,
                 'entry_price': entry_price,
                 'exit_price': exit_price,
-                'sentiment': news_sentiment
+                'sentiment': news_sentiment,
+                'action': action,
+                'hold_time': hold_time
             })
 
             error_data['failure_count'] += 1
             error_data['last_failure'] = datetime.now().isoformat()
 
             # Обновляем средний убыток
-            losses = [t['pnl'] for t in error_data['failed_trades']]
-            error_data['avg_loss'] = sum(losses) / len(losses)
+            if error_data['failed_trades']:
+                losses = [t['pnl'] for t in error_data['failed_trades']]
+                error_data['avg_loss'] = sum(losses) / len(losses)
 
-            print(f"[TraderModel] Запомнена ошибка по {ticker}: убыток {pnl:.2%}")
+            print(f"[TraderModel] Запомнена ошибка по {ticker}: {action}, убыток {pnl:.2%}")
 
         # Награда для обучения
         reward = pnl * 10.0  # Масштабируем
 
         # Дополнительные бонусы/штрафы
-        if hold_time < 0.1:  # Слишком быстро закрыли
-            reward -= 0.5
-        if abs(pnl) > 0.1:  # Большая прибыль/убыток
-            reward += np.sign(pnl) * 0.3
+        if hold_time < 0.01 and abs(pnl) < 0.01:  # Слишком быстро закрыли без результата
+            reward -= 0.3
+        elif abs(pnl) > 0.1:  # Большая прибыль/убыток
+            reward += np.sign(pnl) * 0.5
+        elif pnl > 0:  # Небольшая прибыль
+            reward += 0.1
+
+        # Запоминаем опыт для обучения
+        try:
+            # Здесь можно создать состояние для запоминания в память
+            # Для простоты пока пропускаем, но в будущем можно добавить
+            pass
+        except:
+            pass
 
         return reward, pnl
 
@@ -479,33 +614,35 @@ class AdvancedTraderModel:
             )
 
             # Выбираем действие
-            action, confidence, _ = self.choose_action(state, ticker, price)
+            try:
+                action, confidence, _ = self.choose_action(state, ticker, price)
+            except Exception as e:
+                print(f"[TraderModel] Ошибка choose_action для {ticker}: {e}")
+                action, confidence = 1, 0.5  # HOLD по умолчанию
 
             # Оценка кандидата (чем выше, тем лучше)
             if action == 0:  # BUY
-                # Учитываем уверенность, сентимент и историю успеха
                 stats = self.ticker_stats[ticker]
                 success_bonus = stats['success_rate'] * 0.3 if stats['total_trades'] > 0 else 0.0
 
-                # Штраф за риск
                 risk_score = self.calculate_risk_score(ticker, price, sentiment)
                 risk_penalty = risk_score * 0.2
 
-                # Итоговый score
                 score = (confidence * 0.6 +
                          sentiment * 0.3 +
                          success_bonus -
                          risk_penalty +
-                         self.market_sentiment * 0.1)
+                         self.market_sentiment * 0.1 +
+                         momentum * 0.2)
 
             elif action == 2:  # SELL
-                # Для продажи учитываем негативный сентимент и проблемы
                 error_data = self.error_memory[ticker]
                 failure_penalty = min(error_data['failure_count'] * 0.1, 0.5)
 
                 score = (confidence * 0.4 -
                          sentiment * 0.3 +
-                         failure_penalty)
+                         failure_penalty +
+                         (-momentum * 0.2))  # Отрицательный моментум для продажи
 
             else:  # HOLD
                 score = 0.0
@@ -515,7 +652,9 @@ class AdvancedTraderModel:
         # Сортируем по убыванию score
         candidates.sort(key=lambda x: x[1], reverse=True)
 
-        return candidates
+        print(f"[TraderModel] Отранжировано {len(candidates)} кандидатов")
+
+        return candidates[:40]  # Возвращаем топ-40
 
     def get_worst_position(self,
                            positions: Dict[str, Dict],
@@ -533,14 +672,21 @@ class AdvancedTraderModel:
 
             current_price = prices[ticker]
             avg_price = pos_data['avg_price']
-            pnl = (current_price - avg_price) / avg_price
+
+            if avg_price > 0:
+                pnl = (current_price - avg_price) / avg_price
+            else:
+                pnl = 0.0
 
             # Учитываем историю ошибок
             error_data = self.error_memory[ticker]
-            failure_penalty = error_data['failure_count'] * 0.1
+            failure_penalty = error_data['failure_count'] * 0.15
+
+            # Время удержания (чем дольше, тем выше приоритет на продажу)
+            hold_time_penalty = min(pos_data.get('hold_time_days', 0) / 30.0, 1.0) * 0.2
 
             # Итоговый score (чем ниже, тем хуже)
-            score = pnl - failure_penalty
+            score = pnl - failure_penalty - hold_time_penalty
 
             if score < worst_score:
                 worst_score = score
