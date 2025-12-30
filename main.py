@@ -1,3 +1,11 @@
+# Шаг 1: Удалите текущий неправильный модуль
+#
+# bash
+# pip uninstall schedule -y
+# Шаг 2: Установите правильный модуль
+#
+# bash
+# pip install schedule==1.2.0
 import schedule
 import time
 import threading
@@ -39,6 +47,7 @@ broker = SmartPortfolioBroker(SETTINGS)
 
 def safe_cycle():
     try:
+        print(f"[DEBUG] Запуск safe_cycle() в {datetime.now().strftime('%H:%M:%S')}")
         broker.run_cycle()  # ← теперь внутри run_cycle() уже есть ВСЯ логика времени!
         # analyze_sentiment вызывается отдельно по schedule
     except Exception as e:

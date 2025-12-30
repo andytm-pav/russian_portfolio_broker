@@ -1,17 +1,21 @@
 {
-  "cash": 7100.38,
+  "cash": 7299.98,
   "positions": {
     "LSNG": {
       "qty": 73,
       "avg_price": 14.9
     },
     "KLSB": {
-      "qty": 52,
+      "qty": 1,
       "avg_price": 18.63
     },
-    "MFGS": {
-      "qty": 2,
-      "avg_price": 421.0
+    "GEMC": {
+      "qty": 1,
+      "avg_price": 831.8
+    },
+    "BISVP": {
+      "qty": 60,
+      "avg_price": 11.46
     }
   },
   "trades": [
@@ -35,6 +39,83 @@
       "qty": 2,
       "price": 421.0,
       "total": 842.34
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 26,
+      "price": 20.61,
+      "total": 535.65
+    },
+    {
+      "type": "SELL",
+      "ticker": "MFGS",
+      "qty": 2,
+      "price": 352.0,
+      "total": 703.72
+    },
+    {
+      "type": "BUY",
+      "ticker": "GEMC",
+      "qty": 1,
+      "price": 831.8,
+      "total": 832.13
+    },
+    {
+      "type": "BUY",
+      "ticker": "MGTS",
+      "qty": 1,
+      "price": 1235.0,
+      "total": 1235.49
+    },
+    {
+      "type": "BUY",
+      "ticker": "BISVP",
+      "qty": 60,
+      "price": 11.46,
+      "total": 687.88
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 13,
+      "price": 20.7,
+      "total": 268.99
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 6,
+      "price": 20.61,
+      "total": 123.61
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 3,
+      "price": 20.61,
+      "total": 61.81
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 2,
+      "price": 20.61,
+      "total": 41.2
+    },
+    {
+      "type": "SELL",
+      "ticker": "KLSB",
+      "qty": 1,
+      "price": 20.61,
+      "total": 20.6
+    },
+    {
+      "type": "SELL",
+      "ticker": "MGTS",
+      "qty": 1,
+      "price": 1200.0,
+      "total": 1199.52
     }
   ]
 }

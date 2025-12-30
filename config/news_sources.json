@@ -1,10 +1,13 @@
 [
-  "https://feeds.simplecast.com/5oUpYp6r",
   "https://rssexport.rbc.ru/rbcnews/news/30/full.rss",
   "https://tass.ru/rss/v2.xml",
   "https://www.finam.ru/analysis/conews/rsspoint/",
   "https://www.kommersant.ru/RSS/news.xml",
   "https://www.interfax.ru/rss.asp",
   "https://www.bfm.ru/news.rss?rubric=19",
-  "https://www.finmarket.ru/rss/mainnews.asp"
+  "https://www.finmarket.ru/rss/mainnews.asp",
+  "https://ren.tv/export/global/rss.xml",
+  "https://www.kommersant.ru/rss/news.xml",
+  "https://www.rg.ru/xml/index.xml",
+  "https://news.mail.ru/rss/"
 ]
